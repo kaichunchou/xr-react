@@ -18,19 +18,22 @@ class Dropdown extends React.Component {
         this.props.onChange(this.props.type, value);
     }
 
-    componentDidMount() {
-        
+    createOptions()
+    {
+       let options = [];
+        for (let i = 0; i < this.props.options.length; i++)
+        {
+            options.push(<option value={this.props.options[i][0]}>{this.props.options[i][0]}</option>);
+        }
+        return options;
     }
 
     render(){
         return (
             <div>
-                <select onChange={this.change.bind(this)}>
-                    <option value="select">Select</option>
-                    <option value="A">Apple</option>
-                    <option value="B">Banana</option>
-                    <option value="C">Cranberry</option>
-                </select>
+               <select onChange={this.change.bind(this)}>
+                    {this.createOptions()}
+               </select>
             </div>
             
         );
@@ -45,7 +48,6 @@ class Form extends React.Component {
             currencyfrom: "select",
             currencyto: "select",
             fetched_data: null, //2 dimentional array => [][0]=currency name, [][1]=value
-            fetched_key: null,
             count: 0,
             //fetch_data: test,
         }
@@ -105,23 +107,26 @@ class Form extends React.Component {
         if (!this.state.fetched_data) {
             return <div>Loading</div>;
         }
-        
+
+        var data_1 = [];
+        var data_2 = [];
+        for (var i = 0; i < this.state.fetched_data.length; i++){
+            data_1[i] = this.state.fetched_data[i].slice();
+            data_2[i] = this.state.fetched_data[i].slice();
+        }
+
         return (
             <div>
-                <Dropdown type = "currency_from" onChange={this.onChange.bind(this)} />
-                <div>{from}</div>
-                <Dropdown type = "currency_to" onChange={this.onChange.bind(this)} />
-                <div>{to}</div>
-                <div>{this.state.fetched_data[8][0]}</div>
-                <div>{this.state.count}</div>
+                <Dropdown type = "currency_from" options = {data_1} onChange={this.onChange.bind(this)} />
+                    <div>{from}</div>
+                    <Dropdown type = "currency_to" options = {data_2} onChange={this.onChange.bind(this)} />
+                    <div>{to}</div>
+                    <div>{this.state.fetched_data[8][0]}</div>
+                    <div>{this.state.count}</div>
+                    <div>{data_1[31][1]}</div>
+                    <div>{data_1.length}</div>
             </div>
         );
-    }
-}
-
-function gen_dropdown_options(available_currency){
-    for (var i =0; i<available_currency.length; i++){
-
     }
 }
 
