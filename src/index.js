@@ -3,13 +3,10 @@ import ReactDOM from 'react-dom';
 import './index.css';
 import axios from 'axios';
 
-
-class Dropdown extends React.Component {
+class Dropdown extends React.Component{
     constructor(){
         super();
         this.state = {
-            //type: this.props.type,
-            //value: 'select', //store currencyfrom, currencyto
         };
     }
 
@@ -34,8 +31,7 @@ class Dropdown extends React.Component {
                <select onChange={this.change.bind(this)}>
                     {this.createOptions()}
                </select>
-            </div>
-            
+            </div>  
         );
     }
 }
@@ -49,10 +45,10 @@ class Form extends React.Component {
             currencyto: "select",
             fetched_data: null, //2 dimentional array => [][0]=currency name, [][1]=value
             count: 0,
-            //fetch_data: test,
         }
     }
-    onChange(type, value){
+
+    onChange(type, value){ //dropdown on change, save from and change into state
         if (type === "currency_from"){
             this.setState({
                 currencyfrom: value,
@@ -66,19 +62,19 @@ class Form extends React.Component {
     }
 
     componentDidMount() {
-        axios.get('http://api.fixer.io/latest')
+        axios.get('http://api.fixer.io/latest') //fetch data
           .then(function (response) {
               console.log(response.data);
               
-              var data = new Array();
+              var data = [];
               for(var i in response.data.rates){
-                  var pair = new Array();
+                  var pair = [];
                   pair.push(i); //add key
                   pair.push(response.data.rates[i]); //add value
                   data.push(pair);
               }
 
-              var pair = new Array(); //add currency from data.base
+              pair = []; //add currency from data.base
               pair.push(response.data.base);
               pair.push(1);
               data.push(pair);
@@ -87,6 +83,8 @@ class Form extends React.Component {
 
               this.setState({
                   fetched_data: data,
+                  currencyfrom: data[0][0],
+                  currencyto: data[0][0],
               });
 
           }.bind(this))
@@ -95,8 +93,31 @@ class Form extends React.Component {
           });
         var temp = this.state.count + 1;
         this.setState({
-            count: temp
+            count: temp,
         });
+    }
+
+    
+    handleSubmit(){ //convert, and generate output string
+        var input_amount = document.getElementById('input_amount').value;
+        var currency_from_weight = null;
+        var currency_to_weight = null;
+        for(var i = 0; i < this.state.fetched_data.length; i++){
+            if (this.state.fetched_data[i][0] === this.state.currencyfrom)
+                currency_from_weight = this.state.fetched_data[i][1]; 
+            if (this.state.fetched_data[i][0] === this.state.currencyto)
+                currency_to_weight = this.state.fetched_data[i][1];
+            if (currency_from_weight != null && currency_to_weight != null)
+                break;
+        }
+        var converted_amount = Math.round((input_amount * currency_to_weight / currency_from_weight)*100)/100;
+        var result="";
+        if (input_amount){
+            result = input_amount + ' ' + this.state.currencyfrom + ' = ' + converted_amount + ' ' +this.state.currencyto; 
+        }
+        else
+            result = "Please enter a a value.";
+        document.getElementById('display').innerHTML = result;
     }
 
     render() {
@@ -108,23 +129,20 @@ class Form extends React.Component {
             return <div>Loading</div>;
         }
 
-        var data_1 = [];
-        var data_2 = [];
+        var data = [];
         for (var i = 0; i < this.state.fetched_data.length; i++){
-            data_1[i] = this.state.fetched_data[i].slice();
-            data_2[i] = this.state.fetched_data[i].slice();
+            data[i] = this.state.fetched_data[i].slice();
         }
 
         return (
             <div>
-                <Dropdown type = "currency_from" options = {data_1} onChange={this.onChange.bind(this)} />
-                    <div>{from}</div>
-                    <Dropdown type = "currency_to" options = {data_2} onChange={this.onChange.bind(this)} />
-                    <div>{to}</div>
-                    <div>{this.state.fetched_data[8][0]}</div>
-                    <div>{this.state.count}</div>
-                    <div>{data_1[31][1]}</div>
-                    <div>{data_1.length}</div>
+                <Dropdown type = "currency_from" options = {data} onChange={this.onChange.bind(this)} />
+                <div>{from}</div>
+                <Dropdown type = "currency_to" options = {data} onChange={this.onChange.bind(this)} />
+                <div>{to}</div>
+                <input id ="input_amount" type="number"/>
+                <button onClick={this.handleSubmit.bind(this)}>Submit</button>
+                <p id = 'display'></p>
             </div>
         );
     }
