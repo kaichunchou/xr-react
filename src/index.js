@@ -18,8 +18,7 @@ class Dropdown extends React.Component{
     createOptions()
     {
        let options = [];
-        for (let i = 0; i < this.props.options.length; i++)
-        {
+        for (let i = 0; i < this.props.options.length; i++){
             options.push(<option value={this.props.options[i][0]}>{this.props.options[i][0]}</option>);
         }
         return options;
@@ -44,7 +43,6 @@ class Form extends React.Component {
             currencyfrom: "select",
             currencyto: "select",
             fetched_data: null, //2 dimentional array => [][0]=currency name, [][1]=value
-            count: 0,
         }
     }
 
@@ -62,7 +60,7 @@ class Form extends React.Component {
     }
 
     componentDidMount() {
-        axios.get('http://api.fixer.io/latest') //fetch data
+        axios.get('https://api.fixer.io/latest') //fetch data
           .then(function (response) {
               console.log(response.data);
               
@@ -91,10 +89,6 @@ class Form extends React.Component {
           .catch(function (error) {
               console.log(error);
           });
-        var temp = this.state.count + 1;
-        this.setState({
-            count: temp,
-        });
     }
 
     
