@@ -3,65 +3,53 @@ import ReactDOM from 'react-dom';
 import './index.css';
 import axios from 'axios';
 import { combineReducers, createStore } from 'redux';
-
+import { Provider } from 'react-redux'; 
+import { connect } from 'react-redux';
 /*
     Redex initialization, putting it in the same file to help code explanation
     I store 4 objects: currency_from, currecy_to, inputnumber and outputnumber.
     When a dispatch is called, updated state is shown in console log
 */
-const currencyfromReducer = (state="Select", action) =>{
-    switch(action.type) {
-        case "CHANGE_CURRENCY_FROM": {
-            state = action.currency; //don't need to worry about mutation for string
-            break;
-        }
-        default:
-            return state;
-    }
+const currencyfromReducer = (state = "", action) =>{
+    if (action.type === "CHANGE_CURRENCY_FROM")
+        return action.currency;//don't need to worry about mutation for string
     return state;
 };
 
-const currencytoReducer = (state="Select", action) =>{
-    switch(action.type) {
-        case "CHANGE_CURRENCY_TO": {
-            state = action.currency; //don't need to worry about mutation for string
-            break;
-        }
-        default:
-            return state;
-    }
+const currencytoReducer = (state = "", action) =>{
+    if (action.type === "CHANGE_CURRENCY_TO")
+        return action.currency;//don't need to worry about mutation for string
     return state;
 };
 
 const inputnumberReducer = (state = null, action) =>{
-    switch(action.type) {
-        case "CHANGE_INPUT_NUMBER": {
-            state = action.number; //don't need to worry about mutation for number
-            break;
-        }
-        default:
-            return state;
-    }
+    if (action.type === "CHANGE_INPUT_NUMBER")
+        return action.number;//don't need to worry about mutation for number
     return state;
 };
 
 const outputnumberReducer = (state = null, action) =>{
-    switch(action.type) {
-        case "CHANGE_OUTPUT_NUMBER": {
-            state = action.number; //don't need to worry about mutation for number
-            break;
-        }
-        default:
-            return state;
-    }
+    if (action.type === "CHANGE_OUTPUT_NUMBER")
+        return action.number;//don't need to worry about mutation for number
     return state;
 };
+
+const fixeriodataReducer = (state = null, action) =>{
+    if (action.type === "CHANGE_XR_DATA"){
+        var temp = {};
+        for(var i in action.xr_data)
+            temp[i] = action.xr_data[i];
+        return temp;
+    }
+    return state;
+}
 
 const reducers = combineReducers({ //combine reducers
     currency_from: currencyfromReducer,
     currency_to: currencytoReducer,
     inputnumber: inputnumberReducer,
     outputnumber: outputnumberReducer,
+    xr_data: fixeriodataReducer,
 });
 
 const store = createStore(reducers);
@@ -70,6 +58,9 @@ store.subscribe(() => {
     console.log("store changed", store.getState()) //showing state in console when store changed
 })
 
+
+
+
 /* Dropdown component
     create currency_from, currecy_to dropdown for users to select currencies
     take in 2 props: 1. assign dropdown component his tpye. here there are two types: currency_from and currency_to
@@ -77,12 +68,6 @@ store.subscribe(() => {
                      2. parsed data from https://api.fixer.io/latest, I used the data to generate options for select tags
 */
 class Dropdown extends React.Component{
-    constructor(){
-        super();
-        this.state = {
-        };
-    }
-
     change(event){
         const value = event.target.value;
         this.props.onChange(this.props.type, value);
@@ -90,9 +75,9 @@ class Dropdown extends React.Component{
 
     createOptions()
     {
-       let options = [];
-        for (let i = 0; i < this.props.options.length; i++){
-            options.push(<option key={this.props.type + this.props.options[i][0]} value={this.props.options[i][0]}>{this.props.options[i][0]}</option>); //adding key to avoid error message
+        let options = [];
+        for (var i in this.props.options){
+            options.push(<option key={this.props.type + this.props.options[i][0]} value={i}>???</option>); //adding key to avoid error message
         }
         return options;
     }
@@ -116,28 +101,10 @@ class Dropdown extends React.Component{
                   [][0]=currency name, [][1]=value parsed from https://api.fixer.io/latest
     handleSubmit(): Take user input number, and convert into another currency
 */
+
+
 class Form extends React.Component {
-    constructor() {
-        super();
-
-        this.state = {
-            currencyfrom: "select",
-            currencyto: "select",
-            fetched_data: null, //2 dimentional array => [][0]=currency name, [][1]=value
-        }
-    }
-
     onChange(type, value){ //dropdown on change, save from and change into state
-        if (type === "currency_from"){
-            this.setState({
-                currencyfrom: value,
-            });
-        }
-        else if (type === "currency_to"){
-            this.setState({
-                currencyto: value,
-            });
-        }
         //retux approach:
         if (type === "currency_from"){
             store.dispatch({type: "CHANGE_CURRENCY_FROM", currency: value})
@@ -145,38 +112,28 @@ class Form extends React.Component {
         else if (type === "currency_to"){
             store.dispatch({type: "CHANGE_CURRENCY_TO", currency: value})
         }
-        
     }
-
+    componentWillMount() {
+        /*this.props.dispatch(type="CHANGE_CURRENCY_FROM");
+        this.props.dispatch(type="CHANGE_CURRENCY_TO");
+        this.props.dispatch(type="CHANGE_XR_DATA");
+        this.props.dispatch(type="CHANGE_INPUT_NUMBER");
+        this.props.dispatch(type="CHANGE_OUTPUT_NUMBER");*/
+    }
     componentDidMount() {
         axios.get('https://api.fixer.io/latest') //fetch data
           .then(function (response) {
-              console.log(response.data);
-              
-              var data = [];
-              for(var i in response.data.rates){
-                  var pair = [];
-                  pair.push(i); //add key
-                  pair.push(response.data.rates[i]); //add value
-                  data.push(pair);
+              var data = {};
+
+              for(var t in response.data.rates){
+                  data[t] = response.data.rates[t];
               }
-
-              pair = []; //add currency from data.base
-              pair.push(response.data.base);
-              pair.push(1);
-              data.push(pair);
+              data[response.data.base] = 1;
               
-              data.sort(sortFunction); //sort 2d array
-
-              this.setState({
-                  fetched_data: data,
-                  currencyfrom: data[0][0],
-                  currencyto: data[0][0],
-              });
-              store.dispatch({type: "CHANGE_CURRENCY_FROM", currency: data[0][0]})
-              store.dispatch({type: "CHANGE_CURRENCY_TO", currency: data[0][0]})
-
-          }.bind(this))
+              store.dispatch({type: "CHANGE_CURRENCY_FROM", currency: Object.keys(data)[0]});
+              store.dispatch({type: "CHANGE_CURRENCY_TO", currency: Object.keys(data)[0]});
+              store.dispatch({type: "CHANGE_XR_DATA", xr_data: data});
+          })
           .catch(function (error) {
               console.log(error);
           });
@@ -189,13 +146,14 @@ class Form extends React.Component {
             document.getElementById('display').innerHTML = "Please enter a a value.";
             return;
         }
+        store.dispatch({type: "CHANGE_INPUT_NUMBER", number: input_amount})
         var currency_from_weight = null;
         var currency_to_weight = null;
 
         for(var i = 0; i < this.state.fetched_data.length; i++){
-            if (this.state.fetched_data[i][0] === this.state.currencyfrom)
+            if (this.state.fetched_data[i][0] === store.getState().currency_from)
                 currency_from_weight = this.state.fetched_data[i][1]; 
-            if (this.state.fetched_data[i][0] === this.state.currencyto)
+            if (this.state.fetched_data[i][0] === store.getState().currency_to)
                 currency_to_weight = this.state.fetched_data[i][1];
             if (currency_from_weight != null && currency_to_weight != null)
                 break;
@@ -207,29 +165,25 @@ class Form extends React.Component {
         document.getElementById('display').innerHTML = result;
 
         //RETUX STORE
-        store.dispatch({type: "CHANGE_INPUT_NUMBER", number: input_amount})
         store.dispatch({type: "CHANGE_OUTPUT_NUMBER", number: converted_amount})
+
+
+        
     }
 
     render() {
+        console.log(this.props.xr.data);
         let from, to;
-        from = "Currecny from: " + (this.state.currencyfrom === "select" ? '' : this.state.currencyfrom);
-        to = "Currecny to: " + (this.state.currencyto === "select" ? '' : this.state.currencyto);
-        
-        if (!this.state.fetched_data) {
+        from = "Currecny from: " + store.getState().currency_from;
+        to = "Currecny to: " + store.getState().currency_from;
+        if (store.getState().xr_data === null) {
             return <div>Loading</div>;
         }
-
-        var data = [];
-        for (var i = 0; i < this.state.fetched_data.length; i++){
-            data[i] = this.state.fetched_data[i].slice();
-        }
-
         return (
             <div>
-                <Dropdown type = "currency_from" options = {data} onChange={this.onChange.bind(this)} />
+                <Dropdown type = "currency_from" options = {store.getState().xr_data} onChange={this.onChange.bind(this)} />
                 <div>{from}</div>
-                <Dropdown type = "currency_to" options = {data} onChange={this.onChange.bind(this)} />
+                <Dropdown type = "currency_to" options = {store.getState().xr_data} onChange={this.onChange.bind(this)} />
                 <div>{to}</div>
                 <input id ="input_amount" type="number"/>
                 <button onClick={this.handleSubmit.bind(this)}>Submit</button>
@@ -238,20 +192,17 @@ class Form extends React.Component {
         );
     }
 }
-
-/* sortFunction()
-    Sort 2d array, it is used for dropdown menu
-*/
-function sortFunction(a, b) {
-    if (a[0] === b[0]) {
-        return 0;
-    }
-    else {
-        return (a[0] < b[0]) ? -1 : 1;
-    }
+function mapStateToProps(state) {
+    return { xr_data: state.xr_data };
 }
 
+Form = connect(mapStateToProps)(Form);
+
+
+
 ReactDOM.render(
-  <Form />,
-  document.getElementById('root')
+    <Provider store = {store}>
+        <Form />
+    </Provider>,
+    document.getElementById('root')
 );
